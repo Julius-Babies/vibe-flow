@@ -1,9 +1,20 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
+	interface BingImageResponse {
+		images?: Array<{
+			url?: string;
+			title?: string;
+		}>;
+	}
+
 	let backgroundUrl = $state('');
 	let imageTitle = $state('');
 	let loading = $state(true);
+
+	function isValidImageUrl(url: string): boolean {
+		return url.startsWith('/') || url.startsWith('http://') || url.startsWith('https://');
+	}
 
 	async function fetchBingImage() {
 		try {
@@ -18,12 +29,14 @@
 				throw new Error('Failed to fetch Bing image');
 			}
 			
-			const data = await response.json();
+			const data: BingImageResponse = await response.json();
 			
 			if (data.images && data.images.length > 0) {
 				const image = data.images[0];
-				backgroundUrl = `https://www.bing.com${image.url}`;
-				imageTitle = image.title || '';
+				if (image.url && isValidImageUrl(image.url)) {
+					backgroundUrl = `https://www.bing.com${image.url}`;
+					imageTitle = image.title || '';
+				}
 			}
 			
 			loading = false;
@@ -46,7 +59,7 @@
 <div 
 	class="background" 
 	class:loading={loading}
-	style={backgroundUrl ? `background-image: url(${backgroundUrl})` : ''}
+	style={backgroundUrl ? `background-image: url(${CSS.escape(backgroundUrl)})` : ''}
 	role="img"
 	aria-label={imageTitle}
 >

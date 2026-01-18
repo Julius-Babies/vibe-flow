@@ -6,6 +6,15 @@
 		date: string;
 	}
 
+	interface RSSItem {
+		title?: string;
+		pubDate?: string;
+	}
+
+	interface RSS2JSONResponse {
+		items?: RSSItem[];
+	}
+
 	let news = $state<NewsItem[]>([]);
 	let currentIndex = $state(0);
 	let loading = $state(true);
@@ -25,17 +34,24 @@
 				throw new Error('News fetch failed');
 			}
 			
-			const data = await response.json();
+			const data: RSS2JSONResponse = await response.json();
 			
-			news = data.items.slice(0, 10).map((item: any) => ({
-				title: item.title,
-				date: new Date(item.pubDate).toLocaleDateString('de-DE', {
-					day: '2-digit',
-					month: '2-digit',
-					hour: '2-digit',
-					minute: '2-digit'
-				})
-			}));
+			if (data.items && Array.isArray(data.items)) {
+				news = data.items
+					.slice(0, 10)
+					.filter((item): item is RSSItem => 
+						typeof item?.title === 'string' && typeof item?.pubDate === 'string'
+					)
+					.map((item) => ({
+						title: item.title!,
+						date: new Date(item.pubDate!).toLocaleDateString('de-DE', {
+							day: '2-digit',
+							month: '2-digit',
+							hour: '2-digit',
+							minute: '2-digit'
+						})
+					}));
+			}
 			
 			loading = false;
 		} catch (e) {
